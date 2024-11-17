@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Home, Book, PenTool, FolderGit2 } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { Home, Book, PenTool, FolderGit2, LogOut } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -10,6 +10,7 @@ import {
   SidebarFooter,
   SidebarGroup,
 } from '@/components/ui/sidebar'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const navigation = [
   {
@@ -36,6 +37,13 @@ const navigation = [
 
 export function StudentSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClientComponentClient()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <Sidebar defaultOpen>
@@ -68,9 +76,13 @@ export function StudentSidebar() {
         </div>
       </SidebarContent>
       <SidebarFooter className="py-4">
-        <p className="px-4 text-xs text-gray-500">
-          2024 Komandro LMS
-        </p>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Logout</span>
+        </button>
       </SidebarFooter>
     </Sidebar>
   )
