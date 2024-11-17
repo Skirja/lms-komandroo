@@ -23,14 +23,14 @@ async function createAdminUser() {
   try {
     // First check if user exists in auth
     const { data: existingUser, error: fetchError } = await supabase.auth.admin.listUsers()
-    
+
     if (fetchError) {
       console.error('Error checking existing users:', fetchError)
       return
     }
 
     const adminExists = existingUser.users.some(user => user.email === 'admin@komandro.com')
-    
+
     let authData
     if (adminExists) {
       console.log('Admin user already exists in Auth')
@@ -40,7 +40,10 @@ async function createAdminUser() {
       const { data, error: authError } = await supabase.auth.admin.createUser({
         email: 'admin@komandro.com',
         password: 'komandro@admin',
-        email_confirm: true
+        email_confirm: true,
+        user_metadata: {
+          full_name: 'Admin Komandro'
+        }
       })
 
       if (authError) {

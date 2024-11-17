@@ -28,6 +28,9 @@ export async function POST(request) {
       email,
       password,
       email_confirm: true,
+      user_metadata: {
+        full_name: name
+      }
     })
 
     if (authError) {
@@ -245,7 +248,13 @@ export async function PUT(request) {
     if (authUser) {
       const updates = {
         ...(email && { email }),
-        ...(password && { password })
+        ...(password && { password }),
+        ...(name && { 
+          user_metadata: {
+            ...authUser.user_metadata,
+            full_name: name
+          }
+        })
       }
 
       if (Object.keys(updates).length > 0) {
