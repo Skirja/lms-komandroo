@@ -19,7 +19,7 @@ create table students (
 );
 
 create table users (
-  id bigint primary key generated always as identity,
+  id uuid primary key,
   email text unique not null,
   password text not null,
   role text not null check (role in ('admin', 'student')),

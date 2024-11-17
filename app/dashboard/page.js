@@ -73,40 +73,60 @@ export default function DashboardPage() {
     async function loadStudentData() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
+        
         if (!session) {
           setLoading(false)
           return
         }
 
-        // Get student data
-        const { data: userData } = await supabase
+        // Get student data using the auth user ID
+        const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('student_id')
+          .select('*')
           .eq('id', session.user.id)
           .single()
 
-        if (userData) {
-          const { data: student } = await supabase
-            .from('students')
-            .select('*, tracks(name)')
-            .eq('id', userData.student_id)
-            .single()
-
-          setStudent(student)
-
-          // TODO: Load actual progress data
-          setProgress({
-            learning: 60,
-            quiz: 40,
-            projects: 20
-          })
-
-          // TODO: Load actual quiz history
-          setQuizHistory([
-            { title: 'Quiz 1', score: 85, date: '2024-01-15' },
-            { title: 'Quiz 2', score: 90, date: '2024-01-16' },
-          ])
+        if (userError) {
+          setLoading(false)
+          return
         }
+
+        if (!userData || !userData.student_id) {
+          setLoading(false)
+          return
+        }
+
+        // Fetch student details with track information
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select(`
+            *,
+            tracks (
+              name
+            )
+          `)
+          .eq('id', userData.student_id)
+          .single()
+
+        if (studentError) {
+          setLoading(false)
+          return
+        }
+
+        setStudent(student)
+
+        // TODO: Load actual progress data
+        setProgress({
+          learning: 60,
+          quiz: 40,
+          projects: 20
+        })
+
+        // TODO: Load actual quiz history
+        setQuizHistory([
+          { title: 'Quiz 1', score: 85, date: '2024-01-15' },
+          { title: 'Quiz 2', score: 90, date: '2024-01-16' },
+        ])
       } catch (error) {
         console.error('Error loading student data:', error)
       } finally {
@@ -138,7 +158,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-blue-600 to-blue-700">
+      <Card className="bg-gradient-to-r from-green-600 to-green-700">
         <CardHeader>
           <CardTitle className="text-2xl text-white">
             Welcome back, {student.name}!

@@ -21,8 +21,6 @@ export async function POST(request) {
   try {
     const { name, email, password, track } = await request.json()
 
-    console.log('Creating student with data:', { name, email, track })
-
     // Create auth user using service role client
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -34,11 +32,8 @@ export async function POST(request) {
     })
 
     if (authError) {
-      console.error('Auth error:', authError)
       throw authError
     }
-
-    console.log('Auth user created:', authUser)
 
     // Get track id
     const { data: trackData, error: trackError } = await supabase
@@ -48,16 +43,12 @@ export async function POST(request) {
       .single()
 
     if (trackError) {
-      console.error('Track error:', trackError)
       throw trackError
     }
 
     if (!trackData) {
-      console.error('Track not found:', track)
       throw new Error('Track not found')
     }
-
-    console.log('Track found:', trackData)
 
     // Create student record first
     const { data: studentData, error: studentError } = await supabase
@@ -72,32 +63,27 @@ export async function POST(request) {
       .single()
 
     if (studentError) {
-      console.error('Student error:', studentError)
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       throw studentError
     }
-
-    console.log('Student record created')
 
     // Create user record linking to student
     const { error: userError } = await supabase
       .from('users')
       .insert({
+        id: authUser.user.id,  // Supabase Auth UUID
         email,
-        password, // Note: In production, you should hash this password
+        password,
         role: 'student',
-        student_id: studentData.id
+        student_id: studentData.id  // Access first item from the array
       })
 
     if (userError) {
-      console.error('User error:', userError)
       // Clean up previous records
       await supabase.from('students').delete().eq('id', studentData.id)
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       throw userError
     }
-
-    console.log('User record created')
 
     return NextResponse.json({
       message: 'Student created successfully',
@@ -249,7 +235,7 @@ export async function PUT(request) {
       const updates = {
         ...(email && { email }),
         ...(password && { password }),
-        ...(name && { 
+        ...(name && {
           user_metadata: {
             ...authUser.user_metadata,
             full_name: name
