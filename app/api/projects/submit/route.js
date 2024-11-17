@@ -2,12 +2,22 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+const BUCKET_NAME = 'projekUpload'
+const STORAGE_URL = 'https://yyvmvinnzllepgaszyed.supabase.co/storage/v1/s3'
+
 export async function POST(request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
     const formData = await request.formData()
     const file = formData.get('file')
     const projectId = formData.get('projectId')
+
+    if (!file || !projectId) {
+      return NextResponse.json(
+        { error: 'Missing file or project ID' },
+        { status: 400 }
+      )
+    }
 
     // Verify auth session
     const { data: { session } } = await supabase.auth.getSession()
@@ -75,33 +85,48 @@ export async function POST(request) {
       )
     }
 
-    // Upload file to Supabase Storage
-    const fileName = `${userData.student_id}_${projectId}_${file.name}`
+    // Generate unique filename
+    const timestamp = new Date().getTime()
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userData.student_id}_${projectId}_${timestamp}.${fileExt}`
+    const filePath = `projects/${fileName}`
+
+    // Upload file to Supabase Storage with RLS
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('project-submissions')
-      .upload(fileName, file)
+      .from(BUCKET_NAME)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type
+      })
 
     if (uploadError) {
+      console.error('Upload error:', uploadError)
       return NextResponse.json(
-        { error: 'Failed to upload file' },
+        { error: 'Failed to upload file: ' + uploadError.message },
         { status: 500 }
       )
     }
 
-    // Create submission record
+    // Get the file URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filePath)
+
+    // Create submission record in database
     const { error: submissionError } = await supabase
       .from('student_projects')
       .insert({
         student_id: userData.student_id,
         project_id: projectId,
-        file_path: fileName
+        file_path: `${STORAGE_URL}/${BUCKET_NAME}/${filePath}`
       })
 
     if (submissionError) {
       // Cleanup uploaded file if record creation fails
       await supabase.storage
-        .from('project-submissions')
-        .remove([fileName])
+        .from(BUCKET_NAME)
+        .remove([filePath])
 
       return NextResponse.json(
         { error: 'Failed to create submission record' },
@@ -109,7 +134,14 @@ export async function POST(request) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      data: {
+        filePath: `${STORAGE_URL}/${BUCKET_NAME}/${filePath}`,
+        publicUrl,
+        submittedAt: new Date().toISOString()
+      }
+    })
   } catch (error) {
     console.error('Project submission error:', error)
     return NextResponse.json(
