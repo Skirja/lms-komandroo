@@ -1,6 +1,19 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+
+// Create a Supabase client with the service role key
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function POST(request) {
   const supabase = createRouteHandlerClient({ cookies })
@@ -8,21 +21,21 @@ export async function POST(request) {
   try {
     const { name, email, password, track } = await request.json()
 
-    console.log('Creating student with data:', { name, email, track }) // Log input data
+    console.log('Creating student with data:', { name, email, track })
 
-    // Create auth user
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+    // Create auth user using service role client
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
 
     if (authError) {
-      console.error('Auth error:', authError) // Log auth error
+      console.error('Auth error:', authError)
       throw authError
     }
 
-    console.log('Auth user created:', authUser) // Log successful auth user creation
+    console.log('Auth user created:', authUser)
 
     // Get track id
     const { data: trackData, error: trackError } = await supabase
@@ -32,118 +45,72 @@ export async function POST(request) {
       .single()
 
     if (trackError) {
-      console.error('Track error:', trackError) // Log track error
+      console.error('Track error:', trackError)
       throw trackError
     }
 
     if (!trackData) {
-      console.error('Track not found:', track) // Log track not found
+      console.error('Track not found:', track)
       throw new Error('Track not found')
     }
 
-    console.log('Track found:', trackData) // Log track data
+    console.log('Track found:', trackData)
 
-    // Create user record
-    const { error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: authUser.user.id,
-        name,
-        email,
-        role: 'student'
-      })
-
-    if (userError) {
-      console.error('User error:', userError) // Log user error
-
-      // Clean up auth user if user record creation fails
-      await supabase.auth.admin.deleteUser(authUser.user.id)
-      throw userError
-    }
-
-    console.log('User record created') // Log successful user creation
-
-    // Create student record
-    const { error: studentError } = await supabase
+    // Create student record first
+    const { data: studentData, error: studentError } = await supabase
       .from('students')
       .insert({
-        user_id: authUser.user.id,
+        name,
+        email,
+        password, // Note: In production, you should hash this password
         track_id: trackData.id
       })
+      .select()
+      .single()
 
     if (studentError) {
-      console.error('Student error:', studentError) // Log student error
-
-      // Clean up previous records if student record creation fails
-      await supabase.from('users').delete().eq('id', authUser.user.id)
-      await supabase.auth.admin.deleteUser(authUser.user.id)
+      console.error('Student error:', studentError)
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       throw studentError
     }
 
-    console.log('Student record created') // Log successful student creation
+    console.log('Student record created')
+
+    // Create user record linking to student
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        password, // Note: In production, you should hash this password
+        role: 'student',
+        student_id: studentData.id
+      })
+
+    if (userError) {
+      console.error('User error:', userError)
+      // Clean up previous records
+      await supabase.from('students').delete().eq('id', studentData.id)
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+      throw userError
+    }
+
+    console.log('User record created')
 
     return NextResponse.json({
       message: 'Student created successfully',
       student: {
-        id: authUser.user.id,
+        id: studentData.id,
         name,
         email,
         track
       }
     })
   } catch (error) {
-    console.error('Final error:', error) // Log the final error
+    console.error('Final error:', error)
     return NextResponse.json({
       error: error.message,
       details: error
     }, { status: 500 })
-  }
-}
-
-export async function PUT(request) {
-  const supabase = createRouteHandlerClient({ cookies })
-
-  try {
-    const { id, name, email, password, track } = await request.json()
-
-    // Update user info
-    const { error: userError } = await supabase
-      .from('users')
-      .update({ name, email })
-      .eq('id', id)
-
-    if (userError) throw userError
-
-    // Update password if provided
-    if (password) {
-      const { error: passwordError } = await supabase.auth.admin.updateUserById(
-        id,
-        { password }
-      )
-      if (passwordError) throw passwordError
-    }
-
-    // Update track if provided
-    if (track) {
-      const { data: trackData } = await supabase
-        .from('tracks')
-        .select('id')
-        .eq('name', track)
-        .single()
-
-      if (!trackData) throw new Error('Track not found')
-
-      const { error: trackError } = await supabase
-        .from('students')
-        .update({ track_id: trackData.id })
-        .eq('user_id', id)
-
-      if (trackError) throw trackError
-    }
-
-    return NextResponse.json({ message: 'Student updated successfully' })
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
@@ -160,19 +127,17 @@ export async function GET(request) {
     let query = supabase
       .from('students')
       .select(`
-        user_id,
+        id,
+        name,
+        email,
         tracks (
           name
-        ),
-        users (
-          name,
-          email
         )
       `)
 
     // Apply search filter
     if (search) {
-      query = query.or(`users.name.ilike.%${search}%,users.email.ilike.%${search}%`)
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
     }
 
     // Apply track filter
@@ -191,15 +156,15 @@ export async function GET(request) {
 
     const { data, error } = await query
       .range(from, to)
-      .order('user_id')
+      .order('id')
 
     if (error) throw error
 
     // Format the response
     const students = data.map(student => ({
-      id: student.user_id,
-      name: student.users.name,
-      email: student.users.email,
+      id: student.id,
+      name: student.name,
+      email: student.email,
       track: student.tracks.name
     }))
 
@@ -217,6 +182,66 @@ export async function GET(request) {
   }
 }
 
+export async function PUT(request) {
+  const supabase = createRouteHandlerClient({ cookies })
+
+  try {
+    const { id, name, email, password, track } = await request.json()
+
+    // Update student info
+    const updateData = { name, email }
+    if (password) {
+      updateData.password = password // Note: In production, you should hash this password
+    }
+
+    const { error: studentError } = await supabase
+      .from('students')
+      .update(updateData)
+      .eq('id', id)
+
+    if (studentError) throw studentError
+
+    // Update track if provided
+    if (track) {
+      const { data: trackData } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('name', track)
+        .single()
+
+      if (!trackData) throw new Error('Track not found')
+
+      const { error: trackError } = await supabase
+        .from('students')
+        .update({ track_id: trackData.id })
+        .eq('id', id)
+
+      if (trackError) throw trackError
+    }
+
+    // Update auth user password if provided
+    if (password) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('student_id', id)
+        .single()
+
+      if (userData) {
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          userData.id,
+          { password }
+        )
+        if (passwordError) throw passwordError
+      }
+    }
+
+    return NextResponse.json({ message: 'Student updated successfully' })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
 export async function DELETE(request) {
   const supabase = createRouteHandlerClient({ cookies })
   const { searchParams } = new URL(request.url)
@@ -227,26 +252,34 @@ export async function DELETE(request) {
   }
 
   try {
-    // Delete student record
-    const { error: studentError } = await supabase
-      .from('students')
-      .delete()
-      .eq('user_id', id)
-
-    if (studentError) throw studentError
+    // Get user id first
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('student_id', id)
+      .single()
 
     // Delete user record
     const { error: userError } = await supabase
       .from('users')
       .delete()
-      .eq('id', id)
+      .eq('student_id', id)
 
     if (userError) throw userError
 
-    // Delete auth user
-    const { error: authError } = await supabase.auth.admin.deleteUser(id)
+    // Delete student record
+    const { error: studentError } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', id)
 
-    if (authError) throw authError
+    if (studentError) throw studentError
+
+    // Delete auth user if we found one
+    if (userData) {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.id)
+      if (authError) throw authError
+    }
 
     return NextResponse.json({ message: 'Student deleted successfully' })
   } catch (error) {

@@ -34,10 +34,10 @@ export default function LoginPage() {
         throw new Error('Invalid email or password')
       }
 
-      // Check user role in our database
+      // Check user role in our database using email
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('role')
+        .select('role, student_id')
         .eq('email', email)
         .single()
 
@@ -49,10 +49,17 @@ export default function LoginPage() {
       // Redirect based on role
       if (userData.role === 'admin') {
         router.push('/admin')
-      } else {
+      } else if (userData.student_id) {
+        // Only redirect to dashboard if they have a student_id
         router.push('/dashboard')
+      } else {
+        throw new Error('Access denied. Please contact administrator.')
       }
+
+      // Force a router refresh to update the navigation
+      router.refresh()
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message || 'An error occurred during login')
     } finally {
       setLoading(false)
