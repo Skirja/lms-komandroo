@@ -15,13 +15,13 @@ function LoadingState() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner Skeleton */}
-      <Card className="bg-gradient-to-r from-blue-600 to-blue-700">
+      <Card className="bg-gradient-to-r from-green-600 to-green-700">
         <CardHeader>
-          <Skeleton className="h-8 w-64 bg-blue-400" />
-          <Skeleton className="h-4 w-32 bg-blue-400" />
+          <Skeleton className="h-8 w-64 bg-green-400" />
+          <Skeleton className="h-4 w-32 bg-green-400" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-4 w-96 bg-blue-400" />
+          <Skeleton className="h-4 w-96 bg-green-400" />
         </CardContent>
       </Card>
 
@@ -244,7 +244,7 @@ export default function DashboardPage() {
           <CardTitle className="text-2xl text-white">
             Welcome back, {student.name}!
           </CardTitle>
-          <p className="text-blue-100">
+          <p className="text-gray-100">
             Track: {student.tracks?.name}
           </p>
         </CardHeader>
