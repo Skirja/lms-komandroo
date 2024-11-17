@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# LMS Komandro
 
-## Getting Started
+Ini adalah proyek [Next.js](https://nextjs.org/) untuk Learning Management System (LMS) Komandro.
 
-First, run the development server:
+## Persiapan
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Ikuti langkah-langkah berikut untuk menyiapkan proyek ini di lingkungan lokal Anda:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Clone repositori ini:
+   ```bash
+   git clone https://github.com/your-username/lms-komandroo.git
+   cd lms-komandroo
+   ```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+2. Install dependensi:
+   ```bash
+   npm install
+   # atau
+   yarn install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+3. Siapkan variabel lingkungan:
+   - Salin file `.env.example` menjadi `.env.local`
+   - Isi variabel lingkungan yang diperlukan di `.env.local`
 
-## Learn More
+4. Jalankan server:
+   ```bash
+   npm run dev
+   # atau
+   yarn dev
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+5. Buka [http://localhost:3000](http://localhost:3000) di browser Anda untuk melihat hasilnya.
+6. Setup Supabase:
+   Langkah-langkah berikut akan menghubungkan proyek lokal Anda dengan proyek Supabase dan menginisialisasi database:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   a. Hubungkan proyek lokal dengan proyek Supabase:
+      ```bash
+      npx supabase link --project-ref <project-id>
+      ```
+      Ganti `<project-id>` dengan ID proyek Supabase Anda.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+   b. Login ke Supabase CLI:
+      ```bash
+      npx supabase login
+      ```
+      Ikuti instruksi untuk mengautentikasi CLI dengan akun Supabase Anda.
 
-## Deploy on Vercel
+   c. Terapkan migrasi database dan data awal:
+      ```bash
+      npx supabase db push --include-seed
+      ```
+      Perintah ini akan menjalankan file migrasi SQL dan memasukkan data awal ke database Anda.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   d. Buat admin pertama:
+      ```bash
+      node scripts/create-admin.js
+      ```
+      Script ini akan membuat akun admin pertama di database Anda.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   Pastikan Anda telah mengatur variabel lingkungan yang diperlukan di file `.env.local` sebelum menjalankan langkah-langkah ini.
+
+## Struktur Proyek
+
+- `app/`: Berisi komponen dan halaman Next.js
+- `components/`: Komponen React yang dapat digunakan kembali
+- `lib/`: Utilitas dan fungsi helper
+
+## Teknologi yang Digunakan
+
+- Next.js 14
+- React 18
+- Tailwind CSS
+- Supabase (untuk autentikasi dan database)
+- Shadcn UI (komponen UI)
