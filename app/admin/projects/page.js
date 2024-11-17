@@ -235,26 +235,40 @@ export default function ProjectsPage() {
 
   const handleDownload = async (filePath) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('project-submissions')
-        .download(filePath)
+      // Extract the actual file path from the full URL if it's a full URL
+      const actualPath = filePath.includes('projekUpload/')
+        ? filePath.split('projekUpload/')[1]
+        : filePath
 
-      if (error) throw error
+      const { data, error } = await supabase.storage
+        .from('projekUpload')
+        .download(actualPath)
+
+      if (error) {
+        console.error('Download error:', error)
+        throw error
+      }
 
       // Create a download link
       const url = URL.createObjectURL(data)
       const a = document.createElement('a')
       a.href = url
-      a.download = filePath.split('/').pop() // Get filename from path
+      a.download = actualPath.split('/').pop() // Get filename from path
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+
+      toast({
+        title: 'Success',
+        description: 'File downloaded successfully'
+      })
     } catch (error) {
+      console.error('Download error:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to download file'
+        description: 'Failed to download file: ' + error.message
       })
     }
   }

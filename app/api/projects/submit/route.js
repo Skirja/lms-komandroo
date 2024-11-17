@@ -2,8 +2,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-const BUCKET_NAME = 'projekUpload'
-const STORAGE_URL = 'https://yyvmvinnzllepgaszyed.supabase.co/storage/v1/s3'
+const BUCKET_NAME = process.env.BUCKET_NAME
+const STORAGE_URL = process.env.STORAGE_URL
 
 export async function POST(request) {
   try {
