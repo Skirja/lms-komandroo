@@ -84,7 +84,7 @@ export default function UsersPage() {
 
       const response = await fetch(`/api/students?${params}`)
       const data = await response.json()
-      
+
       if (response.ok) {
         setStudents(data.students)
         setTotalPages(data.pagination.totalPages)
@@ -106,10 +106,45 @@ export default function UsersPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Client-side validation
+    if (!formData.name?.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Name is required'
+      })
+      return
+    }
+    if (!formData.email?.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Email is required'
+      })
+      return
+    }
+    if (!editingStudent && !formData.password?.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Password is required for new students'
+      })
+      return
+    }
+    if (!formData.track) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please select a track'
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const url = editingStudent ? '/api/students' : '/api/students'
+      const url = '/api/students'
       const method = editingStudent ? 'PUT' : 'POST'
       const body = editingStudent 
         ? { ...formData, id: editingStudent.id }
@@ -124,7 +159,10 @@ export default function UsersPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error)
+        if (data.error?.includes('duplicate key') || data.error?.includes('already exists')) {
+          throw new Error('A student with this email already exists')
+        }
+        throw new Error(data.error || 'Failed to save student')
       }
 
       toast({
@@ -158,7 +196,7 @@ export default function UsersPage() {
       })
 
       const data = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(data.error)
       }
@@ -246,7 +284,7 @@ export default function UsersPage() {
                 {editingStudent ? 'Edit Student' : 'Add New Student'}
               </DialogTitle>
               <DialogDescription>
-                {editingStudent 
+                {editingStudent
                   ? 'Edit student details below.'
                   : 'Fill in the information below to create a new student account.'}
               </DialogDescription>
