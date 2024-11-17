@@ -188,56 +188,78 @@ export async function PUT(request) {
   try {
     const { id, name, email, password, track } = await request.json()
 
-    // Update student info
-    const updateData = { name, email }
-    if (password) {
-      updateData.password = password // Note: In production, you should hash this password
+    // Get current student data
+    const { data: currentStudent } = await supabase
+      .from('students')
+      .select('email')
+      .eq('id', id)
+      .single()
+
+    if (!currentStudent) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
-    const { error: studentError } = await supabase
-      .from('students')
-      .update(updateData)
-      .eq('id', id)
-
-    if (studentError) throw studentError
-
-    // Update track if provided
+    // Get track id if track is provided
+    let track_id = undefined
     if (track) {
-      const { data: trackData } = await supabase
+      const { data: trackData, error: trackError } = await supabase
         .from('tracks')
         .select('id')
         .eq('name', track)
         .single()
 
-      if (!trackData) throw new Error('Track not found')
-
-      const { error: trackError } = await supabase
-        .from('students')
-        .update({ track_id: trackData.id })
-        .eq('id', id)
-
-      if (trackError) throw trackError
+      if (trackError || !trackData) {
+        throw new Error('Track not found')
+      }
+      track_id = trackData.id
     }
 
-    // Update auth user password if provided
-    if (password) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('student_id', id)
-        .single()
+    // Update student record
+    const { error: studentError } = await supabase
+      .from('students')
+      .update({
+        name,
+        email,
+        ...(password && { password }), // Only include if password provided
+        ...(track_id && { track_id }) // Only include if track provided
+      })
+      .eq('id', id)
 
-      if (userData) {
-        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
-          userData.id,
-          { password }
+    if (studentError) throw studentError
+
+    // Update user record
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        email,
+        ...(password && { password })
+      })
+      .eq('student_id', id)
+
+    if (userError) throw userError
+
+    // Get auth user by email and update if needed
+    const { data: authData } = await supabaseAdmin.auth.admin.listUsers()
+    const authUser = authData.users.find(user => user.email === currentStudent.email)
+
+    if (authUser) {
+      const updates = {
+        ...(email && { email }),
+        ...(password && { password })
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+          authUser.id,
+          updates
         )
-        if (passwordError) throw passwordError
+        if (authError) throw authError
       }
     }
 
     return NextResponse.json({ message: 'Student updated successfully' })
   } catch (error) {
+    console.error('Update error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
