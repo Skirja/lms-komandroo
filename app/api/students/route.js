@@ -252,14 +252,22 @@ export async function DELETE(request) {
   }
 
   try {
-    // Get user id first
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('student_id', id)
+    // First get the student's email to find their auth user
+    const { data: studentData } = await supabase
+      .from('students')
+      .select('email')
+      .eq('id', id)
       .single()
 
-    // Delete user record
+    if (!studentData) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 })
+    }
+
+    // Get the auth user by email
+    const { data: authData } = await supabaseAdmin.auth.admin.listUsers()
+    const authUser = authData.users.find(user => user.email === studentData.email)
+
+    // Delete user record first (foreign key constraint)
     const { error: userError } = await supabase
       .from('users')
       .delete()
@@ -275,14 +283,15 @@ export async function DELETE(request) {
 
     if (studentError) throw studentError
 
-    // Delete auth user if we found one
-    if (userData) {
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.id)
+    // Delete auth user if found
+    if (authUser) {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(authUser.id)
       if (authError) throw authError
     }
 
     return NextResponse.json({ message: 'Student deleted successfully' })
   } catch (error) {
+    console.error('Delete error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
