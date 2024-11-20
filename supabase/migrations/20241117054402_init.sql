@@ -84,3 +84,31 @@ create table student_projects (
   file_path text not null,
   submitted_at timestamp with time zone default now()
 );
+
+-- Create student_progress table
+create table if not exists student_progress (
+    id uuid default uuid_generate_v4() primary key,
+    student_id uuid references auth.users(id) on delete cascade,
+    resource_id uuid references learning_resources(id) on delete cascade,
+    completed boolean default false,
+    completed_at timestamp with time zone,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    unique(student_id, resource_id)
+);
+
+-- Enable RLS
+alter table student_progress enable row level security;
+
+-- Policies for student_progress
+create policy "Students can view their own progress"
+    on student_progress for select
+    using (auth.uid() = student_id);
+
+create policy "Students can update their own progress"
+    on student_progress for insert
+    with check (auth.uid() = student_id);
+
+create policy "Students can update their own progress"
+    on student_progress for update
+    using (auth.uid() = student_id);

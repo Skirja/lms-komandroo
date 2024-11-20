@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const BUCKET_NAME = process.env.BUCKET_NAME
-const STORAGE_URL = process.env.STORAGE_URL
+const STORAGE_URL = process.env.STORAGE_URL``
 
 export async function POST(request) {
   try {
