@@ -100,12 +100,13 @@ export default function DashboardPage() {
           return
         }
 
-        // Fetch student details with track information
+        // Get student details with track information
         const { data: student, error: studentError } = await supabase
           .from('students')
           .select(`
             *,
             tracks (
+              id,
               name
             )
           `)
@@ -113,9 +114,36 @@ export default function DashboardPage() {
           .single()
 
         if (studentError) {
+          console.error('Error loading student:', studentError)
           setLoading(false)
           return
         }
+
+        // Get learning progress for student's track
+        const { data: learningResources, error: resourcesError } = await supabase
+          .from('learning_resources')
+          .select('id')
+          .eq('track_id', student.track_id)
+
+        const { data: completedResources, error: progressError } = await supabase
+          .from('student_progress')
+          .select('*')
+          .eq('student_id', session.user.id)
+          .eq('completed', true)
+
+        let learningProgress = 0
+        if (!resourcesError && !progressError && learningResources) {
+          const totalResources = learningResources.length
+          const completedCount = completedResources?.length || 0
+          learningProgress = totalResources > 0 
+            ? Math.round((completedCount / totalResources) * 100)
+            : 0
+        }
+
+        setProgress(prev => ({
+          ...prev,
+          learning: learningProgress
+        }))
 
         setStudent(student)
 
@@ -141,7 +169,7 @@ export default function DashboardPage() {
           : 0
 
         setProgress({
-          learning: 60,
+          learning: learningProgress,
           quiz: 40,
           projects: projectProgress
         })
