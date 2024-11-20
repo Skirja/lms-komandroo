@@ -18,20 +18,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 
-function LoadingState() {
+function LoadingState({ count = 0 }) {
+  if (count === 0) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-32" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array(count).fill(0).map((_, i) => (
+          <Card key={i} className="flex flex-col">
             <CardHeader>
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-24 mt-2" />
             </CardHeader>
             <CardContent>
               <Skeleton className="h-4 w-32" />
@@ -49,8 +58,10 @@ function LoadingState() {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [student, setStudent] = useState(null)
-  const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [projectCount, setProjectCount] = useState(0)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [submissions, setSubmissions] = useState([])
   const [uploading, setUploading] = useState(false)
   const [filter, setFilter] = useState('all') // 'all', 'pending', 'submitted', 'expired'
   const { toast } = useToast()
@@ -60,70 +71,54 @@ export default function ProjectsPage() {
     async function loadData() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          setLoading(false)
-          return
-        }
+        if (!session) return
+
+        setIsInitialLoad(false)
 
         // Get student data
-        const { data: userData, error: userError } = await supabase
+        const { data: userData } = await supabase
           .from('users')
           .select('student_id')
           .eq('id', session.user.id)
           .single()
 
-        if (userError || !userData?.student_id) {
-          setLoading(false)
-          return
+        if (userData) {
+          const { data: student } = await supabase
+            .from('students')
+            .select('*, tracks(name)')
+            .eq('id', userData.student_id)
+            .single()
+
+          setStudent(student)
+
+          if (student) {
+            // Get projects for student's track
+            const { data: projects } = await supabase
+              .from('projects')
+              .select('*')
+              .eq('track_id', student.track_id)
+              .order('deadline', { ascending: true })
+
+            // Get submissions for this student
+            const { data: submissions } = await supabase
+              .from('student_projects')
+              .select('*')
+              .eq('student_id', student.id)
+
+            if (!projects || !submissions) {
+              toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to load projects or submissions'
+              })
+              return
+            }
+
+            setProjects(projects || [])
+            setSubmissions(submissions || [])
+            setProjectCount(projects.length)
+          }
         }
-
-        // Get student details with track
-        const { data: student, error: studentError } = await supabase
-          .from('students')
-          .select('*, tracks(name)')
-          .eq('id', userData.student_id)
-          .single()
-
-        if (studentError) {
-          setLoading(false)
-          return
-        }
-
-        setStudent(student)
-
-        // Load projects for student's track
-        const { data: projects, error: projectsError } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('track_id', student.track_id)
-          .order('deadline', { ascending: true })
-
-        if (projectsError) {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to load projects'
-          })
-          return
-        }
-
-        // Load student's submissions
-        const { data: submissions, error: submissionsError } = await supabase
-          .from('student_projects')
-          .select('*')
-          .eq('student_id', student.id)
-
-        if (submissionsError) {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to load submissions'
-          })
-          return
-        }
-
-        setProjects(projects || [])
-        setSubmissions(submissions || [])
       } catch (error) {
         console.error('Error loading data:', error)
         toast({
@@ -142,7 +137,7 @@ export default function ProjectsPage() {
   const handleFileUpload = async (projectId, file) => {
     try {
       setUploading(true)
-      
+
       // Check file type
       if (!file.name.toLowerCase().endsWith('.zip') && !file.name.toLowerCase().endsWith('.rar')) {
         toast({
@@ -197,15 +192,18 @@ export default function ProjectsPage() {
   }
 
   if (loading) {
-    return <LoadingState />
+    if (isInitialLoad) {
+      return null
+    }
+    return <LoadingState count={projectCount} />
   }
 
   if (!student) {
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-center text-gray-600">
-            Please log in as a student to view this page.
+          <p className="text-center text-muted-foreground">
+            Student information not found.
           </p>
         </CardContent>
       </Card>
@@ -213,14 +211,15 @@ export default function ProjectsPage() {
   }
 
   const filteredProjects = projects.filter(project => {
-    const isSubmitted = submissions.some(s => s.project_id === project.id)
+    const submission = submissions.find(s => s.project_id === project.id)
+    const isSubmitted = !!submission
     const isExpired = new Date(project.deadline) < new Date()
 
     switch (filter) {
-      case 'submitted':
-        return isSubmitted
       case 'pending':
         return !isSubmitted && !isExpired
+      case 'submitted':
+        return isSubmitted
       case 'expired':
         return !isSubmitted && isExpired
       default:
@@ -231,102 +230,101 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-gray-600">Track: {student.tracks?.name}</p>
+        <h1 className="text-3xl font-bold">Projects</h1>
+        <div className="flex items-center gap-4">
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter</SelectLabel>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Status</SelectLabel>
-              <SelectItem value="all">All Projects</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="submitted">Submitted</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
       </div>
 
       {filteredProjects.length === 0 ? (
         <Card>
           <CardContent className="py-8">
-            <p className="text-center text-gray-600">
-              No projects found for the selected filter.
+            <p className="text-center text-muted-foreground">
+              No projects available.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => {
-            const isSubmitted = submissions.some(s => s.project_id === project.id)
+            const submission = submissions.find(s => s.project_id === project.id)
+            const isSubmitted = !!submission
             const isExpired = new Date(project.deadline) < new Date()
-            const daysLeft = Math.ceil((new Date(project.deadline) - new Date()) / (1000 * 60 * 60 * 24))
+            let status = 'pending'
+            if (isSubmitted) status = 'submitted'
+            else if (isExpired) status = 'expired'
 
             return (
-              <Card key={project.id} className={`relative ${isExpired ? 'opacity-75' : ''}`}>
+              <Card key={project.id} className="flex flex-col">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle>{project.title}</CardTitle>
-                    {isSubmitted ? (
-                      <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                  <CardTitle className="text-xl">{project.title}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    {status === 'submitted' && (
+                      <Badge variant="success" className="w-fit">
+                        <Check className="w-4 h-4 mr-1" />
                         Submitted
-                      </span>
-                    ) : isExpired ? (
-                      <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full">
+                      </Badge>
+                    )}
+                    {status === 'expired' && (
+                      <Badge variant="destructive" className="w-fit">
+                        <AlertTriangle className="w-4 h-4 mr-1" />
                         Expired
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full">
-                        {daysLeft} days left
-                      </span>
+                      </Badge>
+                    )}
+                    {status === 'pending' && (
+                      <Badge variant="secondary" className="w-fit">
+                        <Clock className="w-4 h-4 mr-1" />
+                        Pending
+                      </Badge>
                     )}
                   </div>
-                  <CardDescription className="line-clamp-2">
-                    {project.description}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="w-4 h-4 mr-1" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {project.description}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
                     Deadline: {format(new Date(project.deadline), 'PPP')}
-                  </div>
+                  </p>
                 </CardContent>
-                <CardFooter>
-                  {isSubmitted ? (
-                    <Button className="w-full" variant="outline" disabled>
-                      <Check className="w-4 h-4 mr-2" />
-                      Submitted
-                    </Button>
-                  ) : isExpired ? (
-                    <Button className="w-full" variant="destructive" disabled>
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Expired
-                    </Button>
-                  ) : (
+                <CardFooter className="mt-auto">
+                  {!isSubmitted && !isExpired && (
                     <div className="w-full">
                       <Input
                         type="file"
                         accept=".zip,.rar"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            handleFileUpload(project.id, e.target.files[0])
-                          }
-                        }}
+                        onChange={(e) => handleFileUpload(project.id, e.target.files[0])}
                         disabled={uploading}
-                        className="hidden"
-                        id={`file-${project.id}`}
+                        className="mb-2"
                       />
                       <Button
                         className="w-full"
-                        onClick={() => document.getElementById(`file-${project.id}`).click()}
                         disabled={uploading}
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {uploading ? 'Uploading...' : 'Upload Project'}
+                        {uploading ? (
+                          <>
+                            <Upload className="mr-2 h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Project
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}

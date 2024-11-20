@@ -6,10 +6,12 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 export default function AdminLayout({ children }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-screen w-full">
         <AdminSidebar />
-        <main className="flex-1 p-6">
-          {children}
+        <main className="flex-1 w-full">
+          <div className="p-6 w-full">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarProvider>

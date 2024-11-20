@@ -382,7 +382,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Projects Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border w-full">
         <Table>
           <TableHeader>
             <TableRow>

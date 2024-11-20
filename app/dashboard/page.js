@@ -11,7 +11,15 @@ import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { Upload, Check } from 'lucide-react'
 
-function LoadingState() {
+function LoadingState({ count = 0 }) {
+  if (count === 0) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Banner Skeleton */}
@@ -27,14 +35,14 @@ function LoadingState() {
 
       {/* Progress Overview Skeleton */}
       <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
+        {Array(3).fill(0).map((_, i) => (
           <Card key={i}>
             <CardHeader>
-              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-6 w-3/4" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="mt-2 h-4 w-16" />
+              <Skeleton className="h-2 w-full mb-2" />
+              <Skeleton className="h-4 w-16" />
             </CardContent>
           </Card>
         ))}
@@ -47,7 +55,7 @@ function LoadingState() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2].map((i) => (
+            {Array(2).fill(0).map((_, i) => (
               <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <Skeleton className="h-4 w-32" />
@@ -66,6 +74,7 @@ function LoadingState() {
 export default function DashboardPage() {
   const [student, setStudent] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [projects, setProjects] = useState([])
   const [submissions, setSubmissions] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -79,175 +88,102 @@ export default function DashboardPage() {
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    async function loadStudentData() {
+    async function loadData() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
 
-        if (!session) {
-          setLoading(false)
-          return
-        }
+        setIsInitialLoad(false)
 
-        // Get student data using the auth user ID
-        const { data: userData, error: userError } = await supabase
+        // Get student data
+        const { data: userData } = await supabase
           .from('users')
-          .select('*')
+          .select('student_id')
           .eq('id', session.user.id)
           .single()
 
-        if (userError || !userData || !userData.student_id) {
-          setLoading(false)
-          return
+        if (userData) {
+          const { data: student } = await supabase
+            .from('students')
+            .select('*, tracks(name)')
+            .eq('id', userData.student_id)
+            .single()
+
+          setStudent(student)
+
+          if (student) {
+            // Load dashboard data
+            const { data: learningResources } = await supabase
+              .from('learning_resources')
+              .select('id')
+              .eq('track_id', student.track_id)
+
+            const { data: completedResources } = await supabase
+              .from('student_progress')
+              .select('*')
+              .eq('student_id', session.user.id)
+              .eq('completed', true)
+
+            let learningProgress = 0
+            if (learningResources) {
+              const totalResources = learningResources.length
+              const completedCount = completedResources?.length || 0
+              learningProgress = totalResources > 0
+                ? Math.round((completedCount / totalResources) * 100)
+                : 0
+            }
+
+            // Get projects and submissions
+            const { data: projects } = await supabase
+              .from('projects')
+              .select('*')
+              .eq('track_id', student.track_id)
+              .order('deadline', { ascending: true })
+
+            const { data: submissions } = await supabase
+              .from('student_projects')
+              .select('*')
+              .eq('student_id', student.id)
+
+            setProjects(projects || [])
+            setSubmissions(submissions || [])
+
+            // Calculate project progress
+            const projectProgress = projects?.length > 0
+              ? Math.round((submissions?.length || 0) / projects.length * 100)
+              : 0
+
+            // Get quiz progress (placeholder for now)
+            const quizProgress = 0 // TODO: Implement actual quiz progress
+
+            setProgress({
+              learning: learningProgress,
+              projects: projectProgress,
+              quiz: quizProgress
+            })
+
+            // Set quiz history (placeholder for now)
+            setQuizHistory([
+              { title: 'Quiz 1', score: 85, date: '2024-01-15' },
+              { title: 'Quiz 2', score: 90, date: '2024-01-16' },
+            ])
+          }
         }
-
-        // Get student details with track information
-        const { data: student, error: studentError } = await supabase
-          .from('students')
-          .select(`
-            *,
-            tracks (
-              id,
-              name
-            )
-          `)
-          .eq('id', userData.student_id)
-          .single()
-
-        if (studentError) {
-          console.error('Error loading student:', studentError)
-          setLoading(false)
-          return
-        }
-
-        // Get learning progress for student's track
-        const { data: learningResources, error: resourcesError } = await supabase
-          .from('learning_resources')
-          .select('id')
-          .eq('track_id', student.track_id)
-
-        const { data: completedResources, error: progressError } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('student_id', session.user.id)
-          .eq('completed', true)
-
-        let learningProgress = 0
-        if (!resourcesError && !progressError && learningResources) {
-          const totalResources = learningResources.length
-          const completedCount = completedResources?.length || 0
-          learningProgress = totalResources > 0 
-            ? Math.round((completedCount / totalResources) * 100)
-            : 0
-        }
-
-        setProgress(prev => ({
-          ...prev,
-          learning: learningProgress
-        }))
-
-        setStudent(student)
-
-        // Fetch projects for student's track
-        const { data: projects } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('track_id', student.track_id)
-          .order('deadline', { ascending: true })
-
-        // Fetch student's submissions
-        const { data: submissions } = await supabase
-          .from('student_projects')
-          .select('*')
-          .eq('student_id', student.id)
-
-        setProjects(projects || [])
-        setSubmissions(submissions || [])
-
-        // Calculate project progress
-        const projectProgress = projects?.length > 0
-          ? (submissions?.length / projects.length) * 100
-          : 0
-
-        setProgress({
-          learning: learningProgress,
-          quiz: 40,
-          projects: projectProgress
-        })
-
-        // TODO: Load actual quiz history
-        setQuizHistory([
-          { title: 'Quiz 1', score: 85, date: '2024-01-15' },
-          { title: 'Quiz 2', score: 90, date: '2024-01-16' },
-        ])
       } catch (error) {
-        console.error('Error loading student data:', error)
+        console.error('Error:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadStudentData()
+    loadData()
   }, [supabase])
 
-  const handleFileUpload = async (projectId, file) => {
-    try {
-      setUploading(true)
-
-      // Check file type
-      if (!file.name.toLowerCase().endsWith('.zip') && !file.name.toLowerCase().endsWith('.rar')) {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid file type',
-          description: 'Please upload a ZIP or RAR file'
-        })
-        return
-      }
-
-      // Check file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        toast({
-          variant: 'destructive',
-          title: 'File too large',
-          description: 'Maximum file size is 50MB'
-        })
-        return
-      }
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('projectId', projectId)
-
-      const response = await fetch('/api/projects/submit', {
-        method: 'POST',
-        body: formData
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error)
-      }
-
-      // Update submissions list
-      setSubmissions(prev => [...prev, { project_id: projectId }])
-
-      toast({
-        title: 'Success',
-        description: 'Project submitted successfully'
-      })
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to submit project'
-      })
-    } finally {
-      setUploading(false)
-    }
-  }
-
   if (loading) {
-    return <LoadingState />
+    if (isInitialLoad) {
+      return null
+    }
+    return <LoadingState count={1} />
   }
 
   if (!student) {
