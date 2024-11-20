@@ -1,88 +1,86 @@
 'use client'
 
-import Link from 'next/link'
-import { Home, Book, PenTool, FolderGit2, LogOut } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { Home, BookOpen, GraduationCap, FolderKanban, LogOut } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarHeader,
 } from '@/components/ui/sidebar'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-const navigation = [
-  {
-    name: 'Home',
-    href: '/dashboard',
-    icon: Home
-  },
-  {
-    name: 'Learning Resources',
-    href: '/dashboard/learning',
-    icon: Book
-  },
-  {
-    name: 'Latihan',
-    href: '/dashboard/quiz',
-    icon: PenTool
-  },
-  {
-    name: 'Projects',
-    href: '/dashboard/projects',
-    icon: FolderGit2
-  }
-]
 
 export function StudentSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  const handleLogout = async () => {
+  const navigation = [
+    {
+      name: 'Home',
+      href: '/dashboard',
+      icon: Home,
+    },
+    {
+      name: 'Learning Resources',
+      href: '/dashboard/learning',
+      icon: BookOpen,
+    },
+    {
+      name: 'Quiz',
+      href: '/dashboard/quiz',
+      icon: GraduationCap,
+    },
+    {
+      name: 'Projects',
+      href: '/dashboard/projects',
+      icon: FolderKanban,
+    },
+  ]
+
+  async function handleSignOut() {
     await supabase.auth.signOut()
     router.push('/login')
   }
 
   return (
-    <Sidebar defaultOpen>
-      <SidebarContent>
-        <div className="flex flex-col gap-4">
-          <div className="flex h-[60px] items-center px-6">
-            <h2 className="text-lg font-semibold">Student Dashboard</h2>
-          </div>
-          <SidebarGroup>
-            {navigation.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+    <Sidebar defaultOpen aria-label="Main Navigation" className="bg-white dark:bg-gray-950 border-r">
+      <SidebarHeader className="border-b p-4 bg-white dark:bg-gray-950">
+        <h1 className="text-lg font-semibold">Student Dashboard</h1>
+      </SidebarHeader>
+      <SidebarContent className="p-4 bg-white dark:bg-gray-950">
+        <div className="space-y-2">
+          {navigation.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
 
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                    isActive ? "bg-accent" : "transparent",
-                    "mx-2"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Link>
-              )
-            })}
-          </SidebarGroup>
+            return (
+              <Button
+                key={item.href}
+                variant={isActive ? 'secondary' : 'ghost'}
+                className="w-full justify-start gap-2"
+                onClick={() => router.push(item.href)}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
+              </Button>
+            )
+          })}
         </div>
       </SidebarContent>
-      <SidebarFooter className="py-4">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+      <SidebarFooter className="border-t p-4 bg-white dark:bg-gray-950">
+        <Button
+          onClick={handleSignOut}
+          variant="destructive"
+          className="w-full justify-start gap-2"
         >
           <LogOut className="h-4 w-4" />
           <span>Logout</span>
-        </button>
+        </Button>
       </SidebarFooter>
     </Sidebar>
   )

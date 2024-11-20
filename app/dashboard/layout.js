@@ -1,30 +1,18 @@
 'use client'
 
-import { SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { StudentSidebar } from '@/components/student-sidebar'
-import { Button } from '@/components/ui/button'
-import { Menu } from 'lucide-react'
-import { useSidebar } from '@/components/ui/sidebar'
 
 function DashboardContent({ children }) {
-  const { toggleSidebar } = useSidebar()
-
   return (
-    <div className="flex h-screen w-full">
+    <div className="relative flex h-screen w-full">
       <StudentSidebar />
-      <main className="flex-1 w-full">
-        <div className="p-6 w-full">
-          {children}
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed bottom-4 right-4 rounded-full shadow-lg md:hidden"
-          onClick={toggleSidebar}
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
+      <main className="flex-1 overflow-y-auto">
+        <div className="container mx-auto py-6">{children}</div>
       </main>
+      <div className="fixed bottom-6 right-6 z-40 md:hidden">
+        <SidebarTrigger className="h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90" />
+      </div>
     </div>
   )
 }
