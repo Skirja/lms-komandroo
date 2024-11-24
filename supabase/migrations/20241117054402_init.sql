@@ -82,6 +82,15 @@ create table quiz_results (
   updated_at timestamp with time zone default now()
 );
 
+create table quiz_answers (
+  id bigint primary key generated always as identity,
+  quiz_result_id bigint references quiz_results (id),
+  question_id bigint references quiz_questions (id),
+  selected_option_id bigint references quiz_options (id),
+  created_at timestamp with time zone default now(),
+  unique(quiz_result_id, question_id)
+);
+
 create table projects (
   id bigint primary key generated always as identity,
   title text not null,
