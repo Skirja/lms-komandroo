@@ -218,7 +218,11 @@ export default function QuizAttemptPage({ params }) {
   }
 
   if (loading) {
-    return <div className="p-6">Loading quiz...</div>
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   if (!quiz || !attempt || !currentQuestion) {
