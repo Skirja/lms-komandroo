@@ -101,14 +101,12 @@ export default function QuizInstructionsPage({ params }) {
           quiz_id: params.id,
           student_id: userData.student_id,
           start_time: new Date().toISOString(),
-          score: 0 // Initialize score as 0
+          score: 0
         })
         .select()
         .single()
 
       if (error) throw error
-
-      return attempt.id // Add return statement here
 
       // Redirect to quiz
       router.push(`/dashboard/quiz/${params.id}/attempt/${attempt.id}`)
@@ -182,14 +180,16 @@ export default function QuizInstructionsPage({ params }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Start Quiz?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you ready to start the quiz? The timer will begin immediately.
-              {existingAttempt && !existingAttempt.end_time && (
-                <div className="mt-4 flex items-center gap-2 text-yellow-600">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>You have an unfinished attempt. Starting a new attempt will override it.</span>
-                </div>
-              )}
+            <AlertDialogDescription asChild>
+              <div>
+                <p>Are you ready to start the quiz? The timer will begin immediately.</p>
+                {existingAttempt && !existingAttempt.end_time && (
+                  <div className="mt-4 flex items-center gap-2 text-yellow-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <p>You have an unfinished attempt. Starting a new attempt will override it.</p>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

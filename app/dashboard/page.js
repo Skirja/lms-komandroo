@@ -153,8 +153,32 @@ export default function DashboardPage() {
               ? Math.round((submissions?.length || 0) / projects.length * 100)
               : 0
 
-            // Get quiz progress (placeholder for now)
-            const quizProgress = 0 // TODO: Implement actual quiz progress
+            // Get quiz progress
+            const { data: allQuizzes } = await supabase
+              .from('quizzes')
+              .select('*')
+              .eq('track_id', student.track_id)
+              .eq('is_active', true)
+
+            const { data: quizResults } = await supabase
+              .from('quiz_results')
+              .select(`
+                id,
+                quiz_id,
+                score,
+                end_time,
+                quizzes (
+                  title
+                )
+              `)
+              .eq('student_id', student.id)
+              .not('end_time', 'is', null)
+              .order('end_time', { ascending: false })
+
+            // Calculate quiz progress
+            const quizProgress = allQuizzes?.length > 0
+              ? Math.round((quizResults?.length || 0) / allQuizzes.length * 100)
+              : 0
 
             setProgress({
               learning: learningProgress,
@@ -162,11 +186,14 @@ export default function DashboardPage() {
               quiz: quizProgress
             })
 
-            // Set quiz history (placeholder for now)
-            setQuizHistory([
-              { title: 'Quiz 1', score: 85, date: '2024-01-15' },
-              { title: 'Quiz 2', score: 90, date: '2024-01-16' },
-            ])
+            // Set actual quiz history
+            setQuizHistory(
+              quizResults?.map(result => ({
+                title: result.quizzes.title,
+                score: result.score,
+                date: format(new Date(result.end_time), 'yyyy-MM-dd')
+              })) || []
+            )
           }
         }
       } catch (error) {
