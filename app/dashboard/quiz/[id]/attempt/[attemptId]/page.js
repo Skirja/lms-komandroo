@@ -18,25 +18,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { cn } from "@/lib/utils"
 
 function QuestionSidebar({ questions, currentQuestion, answers, onQuestionClick }) {
   return (
-    <div className="w-64 p-4 border-r">
-      <h3 className="font-semibold mb-4">Questions</h3>
-      <div className="grid grid-cols-4 gap-2">
+    <div className="h-full space-y-4">
+      <h3 className="font-semibold text-lg">Questions</h3>
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
         {questions.map((question, index) => {
           const isAnswered = answers[question.id] !== undefined
           const isCurrent = question.id === currentQuestion.id
 
           return (
-            <Button
+            <button
               key={question.id}
-              variant={isCurrent ? "default" : isAnswered ? "secondary" : "outline"}
-              className="w-10 h-10"
               onClick={() => onQuestionClick(question)}
+              className={cn(
+                "flex items-center justify-center w-10 h-10 text-sm font-medium rounded-lg transition-colors",
+                {
+                  "bg-primary text-primary-foreground": isCurrent,
+                  "bg-muted": !isCurrent && isAnswered,
+                  "hover:bg-muted": !isCurrent,
+                }
+              )}
             >
               {index + 1}
-            </Button>
+            </button>
           )
         })}
       </div>
@@ -222,79 +229,86 @@ export default function QuizAttemptPage({ params }) {
   const currentIndex = questions.findIndex(q => q.id === currentQuestion.id)
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="border-b p-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">{quiz.title}</h1>
-        <Timer
-          startTime={attempt.start_time}
-          timeLimit={quiz.time_limit}
-          onTimeUp={() => handleSubmit(true)}
-        />
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <QuestionSidebar
-          questions={questions}
-          currentQuestion={currentQuestion}
-          answers={answers}
-          onQuestionClick={setCurrentQuestion}
-        />
-
-        {/* Main content */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                <div>
-                  <span className="text-sm text-muted-foreground">
-                    Question {currentIndex + 1} of {questions.length}
-                  </span>
-                  <p className="text-lg mt-2">{currentQuestion.question_text}</p>
-                </div>
-
-                <RadioGroup
-                  value={answers[currentQuestion.id]}
-                  onValueChange={handleAnswer}
-                >
-                  {currentQuestion.quiz_options.map((option) => (
-                    <div key={option.id} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.id} id={option.id} />
-                      <Label htmlFor={option.id}>{option.option_text}</Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t p-4 flex justify-between">
+    <div className="min-h-screen flex flex-col">
+      {/* Timer */}
+      <div className="bg-background border-b p-4 flex items-center justify-between sticky top-0 z-10">
+        <Timer startTime={attempt.start_time} timeLimit={quiz.time_limit} onTimeUp={handleSubmit} />
         <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentIndex === 0}
+          variant="default"
+          size="sm"
+          onClick={() => setShowSubmitDialog(true)}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
         >
-          Previous
+          Submit Quiz
         </Button>
+      </div>
 
-        <div className="flex gap-2">
-          {currentIndex < questions.length - 1 ? (
-            <Button onClick={handleNext}>Next</Button>
-          ) : (
-            <Button
-              onClick={() => setShowSubmitDialog(true)}
-              disabled={!allQuestionsAnswered}
-            >
-              Submit Quiz
-            </Button>
-          )}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Question Sidebar - Shows at top on mobile, left side on desktop */}
+        <div className="w-full md:w-[280px] p-4 border-b md:border-b-0 md:border-r bg-muted/50">
+          <QuestionSidebar
+            questions={questions}
+            currentQuestion={currentQuestion}
+            answers={answers}
+            onQuestionClick={setCurrentQuestion}
+          />
+        </div>
+
+        {/* Question Content */}
+        <div className="flex-1 p-6">
+          <div className="max-w-2xl mx-auto space-y-8">
+            {/* Question */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">
+                  Question {questions.findIndex(q => q.id === currentQuestion.id) + 1}
+                </h2>
+                <span className="text-sm text-muted-foreground">
+                  {Object.keys(answers).length} of {questions.length} answered
+                </span>
+              </div>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-lg mb-6">{currentQuestion.question_text}</p>
+
+                  <RadioGroup
+                    value={answers[currentQuestion.id]}
+                    onValueChange={handleAnswer}
+                  >
+                    {currentQuestion.quiz_options.map((option) => (
+                      <div key={option.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.id} id={option.id} />
+                        <Label htmlFor={option.id}>{option.option_text}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={questions.findIndex(q => q.id === currentQuestion.id) === 0}
+              >
+                Previous
+              </Button>
+              <Button
+                onClick={handleNext}
+                disabled={questions.findIndex(q => q.id === currentQuestion.id) === questions.length - 1}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Submit Dialog */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
