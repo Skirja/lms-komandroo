@@ -102,12 +102,13 @@ export default function QuizAttemptPage({ params }) {
           .from("quizzes")
           .select(`
             *,
-            questions (
+            quiz_questions (
               id,
               question_text,
-              options (
+              quiz_options (
                 id,
-                option_text
+                option_text,
+                is_correct
               )
             )
           `)
@@ -117,8 +118,8 @@ export default function QuizAttemptPage({ params }) {
         if (!quiz) throw new Error("Quiz not found")
 
         setQuiz(quiz)
-        setQuestions(quiz.questions)
-        setCurrentQuestion(quiz.questions[0])
+        setQuestions(quiz.quiz_questions)
+        setCurrentQuestion(quiz.quiz_questions[0])
 
         // Load existing answers if any
         const { data: existingAnswers } = await supabase
@@ -169,14 +170,10 @@ export default function QuizAttemptPage({ params }) {
       const totalQuestions = questions.length
       let correctAnswers = 0
 
-      // Get correct answers
-      const { data: correctOptions } = await supabase
-        .from("questions")
-        .select("id, correct_option_id")
-        .in("id", Object.keys(answers))
-
-      correctOptions?.forEach(question => {
-        if (answers[question.id] === question.correct_option_id) {
+      Object.entries(answers).forEach(([questionId, selectedOptionId]) => {
+        const question = questions.find(q => q.id.toString() === questionId)
+        const correctOption = question?.quiz_options.find(opt => opt.is_correct)
+        if (correctOption && correctOption.id === selectedOptionId) {
           correctAnswers++
         }
       })
@@ -261,7 +258,7 @@ export default function QuizAttemptPage({ params }) {
                   value={answers[currentQuestion.id]}
                   onValueChange={handleAnswer}
                 >
-                  {currentQuestion.options.map((option) => (
+                  {currentQuestion.quiz_options.map((option) => (
                     <div key={option.id} className="flex items-center space-x-2">
                       <RadioGroupItem value={option.id} id={option.id} />
                       <Label htmlFor={option.id}>{option.option_text}</Label>

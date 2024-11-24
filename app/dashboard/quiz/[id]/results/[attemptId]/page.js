@@ -21,11 +21,16 @@ export default function QuizResultsPage({ params }) {
         const { data: result } = await supabase
           .from("quiz_results")
           .select(`
-            *,
-            quizzes (
+            id,
+            quiz_id,
+            student_id,
+            start_time,
+            end_time,
+            score,
+            quizzes:quiz_id (
               title,
               time_limit,
-              questions (id)
+              quiz_questions:quiz_questions (id)
             )
           `)
           .eq("id", params.attemptId)
@@ -34,7 +39,7 @@ export default function QuizResultsPage({ params }) {
         if (result) {
           setResult({
             ...result,
-            questionCount: result.quizzes.questions.length
+            questionCount: result.quizzes.quiz_questions.length
           })
         }
       } catch (error) {

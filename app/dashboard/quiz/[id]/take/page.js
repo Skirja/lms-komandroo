@@ -60,7 +60,7 @@ export default function QuizInstructionsPage({ params }) {
           .select(`
             *,
             tracks (name),
-            questions (id)
+            quiz_questions (id)
           `)
           .eq("id", params.id)
           .single()
@@ -68,7 +68,7 @@ export default function QuizInstructionsPage({ params }) {
         if (quiz) {
           setQuiz({
             ...quiz,
-            questionCount: quiz.questions?.length || 0
+            questionCount: quiz.quiz_questions?.length || 0
           })
         }
       } catch (error) {
@@ -101,11 +101,14 @@ export default function QuizInstructionsPage({ params }) {
           quiz_id: params.id,
           student_id: userData.student_id,
           start_time: new Date().toISOString(),
+          score: 0 // Initialize score as 0
         })
         .select()
         .single()
 
       if (error) throw error
+
+      return attempt.id // Add return statement here
 
       // Redirect to quiz
       router.push(`/dashboard/quiz/${params.id}/attempt/${attempt.id}`)
