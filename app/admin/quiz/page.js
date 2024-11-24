@@ -201,26 +201,35 @@ export default function QuizPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" size="sm">
-                  View Results
+              <CardFooter className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <Link href={`/admin/quiz/${quiz.id}/results`}>
+                    <Users className="mr-2 h-4 w-4" />
+                    View Results
+                  </Link>
                 </Button>
-                <div className="space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => router.push(`/admin/quiz/${quiz.id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(quiz)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <Link href={`/admin/quiz/${quiz.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(quiz)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
               </CardFooter>
             </Card>
           ))
