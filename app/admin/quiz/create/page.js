@@ -149,18 +149,32 @@ export default function CreateQuizPage() {
 
     try {
       // Get track ID from track name
-      const { data: trackData, error: trackError } = await supabase
+      const { data: tracks, error: trackError } = await supabase
         .from('tracks')
         .select('id, name')
         .eq('name', formData.track_id)
-        .single()
 
       if (trackError) {
         throw new Error('Failed to find track. Please try again.')
       }
 
-      if (!trackData) {
-        throw new Error('Selected track not found')
+      // Use the first matching track or create a new one
+      let trackId
+      if (tracks && tracks.length > 0) {
+        trackId = tracks[0].id
+      } else {
+        // Create new track if none exists
+        const { data: newTrack, error: createTrackError } = await supabase
+          .from('tracks')
+          .insert({ name: formData.track_id })
+          .select()
+          .single()
+
+        if (createTrackError) {
+          throw new Error('Failed to create track. Please try again.')
+        }
+
+        trackId = newTrack.id
       }
 
       // Create the quiz
@@ -168,14 +182,14 @@ export default function CreateQuizPage() {
         .from('quizzes')
         .insert({
           title: formData.title,
-          track_id: trackData.id,
-          time_limit: formData.time_limit,
-          is_active: formData.is_active
+          track_id: trackId,
+          time_limit: parseInt(formData.time_limit) || null
         })
         .select()
         .single()
 
       if (quizError) {
+        console.error('Quiz creation error:', quizError)
         throw new Error('Failed to create quiz. Please try again.')
       }
 
@@ -193,6 +207,7 @@ export default function CreateQuizPage() {
           .single()
 
         if (questionError) {
+          console.error('Question creation error:', questionError)
           throw new Error('Failed to create question. Please try again.')
         }
 
@@ -208,6 +223,7 @@ export default function CreateQuizPage() {
           .insert(optionsToInsert)
 
         if (optionsError) {
+          console.error('Options creation error:', optionsError)
           throw new Error('Failed to create options. Please try again.')
         }
       }
@@ -220,6 +236,7 @@ export default function CreateQuizPage() {
       router.push('/admin/quiz')
       router.refresh()
     } catch (error) {
+      console.error('Full error:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to create quiz",

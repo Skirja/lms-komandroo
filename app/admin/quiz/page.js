@@ -47,6 +47,8 @@ export default function QuizPage() {
           title,
           track_id,
           created_at,
+          is_active,
+          time_limit,
           tracks (
             id,
             name

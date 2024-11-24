@@ -77,6 +77,7 @@ export default function QuizPage() {
               .from('quizzes')
               .select('*')
               .eq('track_id', student.track_id)
+              .eq('is_active', true)
 
             setQuizCount(quizzes?.length || 0)
             setQuizzes(quizzes || [])
@@ -137,7 +138,7 @@ export default function QuizPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Duration: {quiz.duration} minutes
+                  Duration: {quiz.time_limit} minutes
                 </p>
               </CardContent>
             </Card>

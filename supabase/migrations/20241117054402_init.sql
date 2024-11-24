@@ -40,6 +40,8 @@ create table quizzes (
   id bigint primary key generated always as identity,
   title text not null,
   track_id bigint references tracks (id),
+  time_limit integer,
+  is_active boolean default true,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );

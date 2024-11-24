@@ -239,18 +239,49 @@ export default function EditQuizPage({ params }) {
     setIsLoading(true)
 
     try {
+      // Get track ID from track name
+      const { data: tracks, error: trackError } = await supabase
+        .from('tracks')
+        .select('id, name')
+        .eq('name', quizData.track_id)
+
+      if (trackError) {
+        throw new Error('Failed to find track. Please try again.')
+      }
+
+      // Use the first matching track or create a new one
+      let trackId
+      if (tracks && tracks.length > 0) {
+        trackId = tracks[0].id
+      } else {
+        // Create new track if none exists
+        const { data: newTrack, error: createTrackError } = await supabase
+          .from('tracks')
+          .insert({ name: quizData.track_id })
+          .select()
+          .single()
+
+        if (createTrackError) {
+          throw new Error('Failed to create track. Please try again.')
+        }
+
+        trackId = newTrack.id
+      }
+
       // Update quiz
       const { error: quizError } = await supabase
         .from('quizzes')
         .update({
           title: quizData.title,
-          track_id: quizData.track_id,
-          time_limit: quizData.time_limit,
+          track_id: trackId,
+          time_limit: parseInt(quizData.time_limit) || null,
           is_active: quizData.is_active
         })
         .eq('id', params.id)
 
-      if (quizError) throw quizError
+      if (quizError) {
+        throw new Error('Failed to update quiz. Please try again.')
+      }
 
       // Update existing questions and add new ones
       for (const question of questions) {
@@ -264,7 +295,9 @@ export default function EditQuizPage({ params }) {
             })
             .eq('id', question.id)
 
-          if (questionError) throw questionError
+          if (questionError) {
+            throw new Error('Failed to update question. Please try again.')
+          }
 
           // Update options
           for (const option of question.options) {
@@ -278,7 +311,9 @@ export default function EditQuizPage({ params }) {
                 })
                 .eq('id', option.id)
 
-              if (optionError) throw optionError
+              if (optionError) {
+                throw new Error('Failed to update option. Please try again.')
+              }
             } else {
               // Add new option
               const { error: optionError } = await supabase
@@ -289,7 +324,9 @@ export default function EditQuizPage({ params }) {
                   is_correct: option.is_correct
                 })
 
-              if (optionError) throw optionError
+              if (optionError) {
+                throw new Error('Failed to create option. Please try again.')
+              }
             }
           }
         } else {
@@ -304,7 +341,9 @@ export default function EditQuizPage({ params }) {
             .select()
             .single()
 
-          if (questionError) throw questionError
+          if (questionError) {
+            throw new Error('Failed to create question. Please try again.')
+          }
 
           // Add options for new question
           const optionsToInsert = question.options.map(opt => ({
@@ -317,7 +356,9 @@ export default function EditQuizPage({ params }) {
             .from('quiz_options')
             .insert(optionsToInsert)
 
-          if (optionsError) throw optionsError
+          if (optionsError) {
+            throw new Error('Failed to create options. Please try again.')
+          }
         }
       }
 
