@@ -103,7 +103,7 @@ export default function ResourcesPage() {
       const { data: trackData } = await supabase
         .from('tracks')
         .select('id')
-        .eq('name', selectedTrack)
+        .filter('name', 'eq', selectedTrack)
         .single()
 
       if (trackData) {
@@ -151,15 +151,19 @@ export default function ResourcesPage() {
       const { data: trackData, error: trackError } = await supabase
         .from('tracks')
         .select('id')
-        .eq('name', data.track)
-        .single()
+        .filter('name', 'eq', data.track)
+        .limit(1)
 
       if (trackError) throw trackError
+
+      if (!trackData || trackData.length === 0) {
+        throw new Error('Track not found. Please check the track name.')
+      }
 
       const { error } = await supabase.from('learning_resources').insert({
         title: data.title,
         content: data.content,
-        track_id: trackData.id,
+        track_id: trackData[0].id,
       })
 
       if (error) throw error
@@ -180,17 +184,21 @@ export default function ResourcesPage() {
       const { data: trackData, error: trackError } = await supabase
         .from('tracks')
         .select('id')
-        .eq('name', data.track)
-        .single()
+        .filter('name', 'eq', data.track)
+        .limit(1)
 
       if (trackError) throw trackError
+
+      if (!trackData || trackData.length === 0) {
+        throw new Error('Track not found. Please check the track name.')
+      }
 
       const { error } = await supabase
         .from('learning_resources')
         .update({
           title: data.title,
           content: data.content,
-          track_id: trackData.id,
+          track_id: trackData[0].id,
         })
         .eq('id', selectedResource.id)
 
@@ -306,6 +314,71 @@ export default function ResourcesPage() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Learning Resource</DialogTitle>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEdit)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter resource title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GitHub URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter GitHub URL (must end with .md)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="track"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Track</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a track" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {tracks.map((track) => (
+                            <SelectItem key={track} value={track}>
+                              {track}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full">Save Changes</Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
       </div>
 
       <div className="flex items-center space-x-4 mb-6">
