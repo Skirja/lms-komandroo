@@ -119,7 +119,8 @@ export async function GET(request) {
         id,
         name,
         email,
-        tracks (
+        track_id,
+        tracks!inner (
           name
         )
       `)
@@ -134,10 +135,21 @@ export async function GET(request) {
       query = query.eq('tracks.name', track)
     }
 
-    // Get total count for pagination
-    const { count } = await supabase
+    // Get total count for pagination with the same filters
+    let countQuery = supabase
       .from('students')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact' })
+
+    if (search) {
+      countQuery = countQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
+    }
+    if (track) {
+      countQuery = countQuery
+        .select('*, tracks!inner(*)')
+        .eq('tracks.name', track)
+    }
+
+    const { count } = await countQuery.limit(1).single()
 
     // Apply pagination
     const from = (page - 1) * limit
@@ -145,7 +157,7 @@ export async function GET(request) {
 
     const { data, error } = await query
       .range(from, to)
-      .order('id')
+      .order('name')
 
     if (error) throw error
 
@@ -154,7 +166,7 @@ export async function GET(request) {
       id: student.id,
       name: student.name,
       email: student.email,
-      track: student.tracks.name
+      track: student.tracks?.name || 'No Track'
     }))
 
     return NextResponse.json({
@@ -167,7 +179,11 @@ export async function GET(request) {
       }
     })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Error in GET /api/students:', error)
+    return NextResponse.json({
+      error: error.message,
+      details: error
+    }, { status: 500 })
   }
 }
 
