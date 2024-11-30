@@ -143,15 +143,15 @@ export default function QuizPage() {
 
   return (
     <>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Manage Quiz</h1>
             <p className="text-muted-foreground">Create and manage quizzes for students</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
             <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by track" />
               </SelectTrigger>
               <SelectContent>
@@ -163,8 +163,8 @@ export default function QuizPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Link href="/admin/quiz/create" passHref>
-              <Button>
+            <Link href="/admin/quiz/create" className="w-full sm:w-auto" passHref>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Quiz
               </Button>
@@ -172,21 +172,21 @@ export default function QuizPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
             <p>Loading quizzes...</p>
           ) : quizzes.length === 0 ? (
             <p>No quizzes found.</p>
           ) : (
             quizzes.map((quiz) => (
-              <Card key={quiz.id}>
+              <Card key={quiz.id} className="flex flex-col">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl">{quiz.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">{quiz.track}</p>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{quiz.track}</p>
                     </div>
-                    <Badge variant={quiz.is_active ? "default" : "secondary"}>
+                    <Badge variant={quiz.is_active ? "default" : "secondary"} className="shrink-0">
                       {quiz.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
@@ -194,65 +194,67 @@ export default function QuizPage() {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {quiz.time_limit || "No"} minutes
+                      <Clock className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">{quiz.time_limit || "No"} minutes</span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="mr-2 h-4 w-4" />
-                      {quiz.questionCount} questions
+                      <Users className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">{quiz.questionCount} questions</span>
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                  >
-                    <Link href={`/admin/quiz/${quiz.id}/results`}>
-                      <Users className="mr-2 h-4 w-4" />
-                      View Results
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                  >
-                    <Link href={`/admin/quiz/${quiz.id}/edit`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(quiz)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
+                <CardFooter className="mt-auto pt-6">
+                  <div className="flex flex-col w-full gap-2">
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 text-sm"
+                      asChild
+                    >
+                      <Link href={`/admin/quiz/${quiz.id}/results`}>
+                        <Users className="mr-2 h-4 w-4" />
+                        Results
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 text-sm"
+                      asChild
+                    >
+                      <Link href={`/admin/quiz/${quiz.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 text-sm"
+                      onClick={() => handleDelete(quiz)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             ))
           )}
         </div>
-
-        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Quiz</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete &quot;{selectedQuiz?.title}&quot;? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Quiz</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;{selectedQuiz?.title}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <AdminFab />
     </>
   )

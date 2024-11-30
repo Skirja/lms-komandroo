@@ -256,15 +256,15 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Manage Projects</h1>
             <p className="text-muted-foreground">Create and manage projects for students</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
             <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by track" />
               </SelectTrigger>
               <SelectContent>
@@ -276,28 +276,34 @@ export default function ProjectsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={() => { setIsOpen(true); setEditingProject(null); resetForm(); }}>
+            <Button 
+              onClick={() => { setIsOpen(true); setEditingProject(null); resetForm(); }}
+              className="w-full sm:w-auto hover:bg-green-600 text-white"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Project
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
             <p>Loading projects...</p>
           ) : projects.length === 0 ? (
             <p>No projects found.</p>
           ) : (
             projects.map((project) => (
-              <Card key={project.id}>
+              <Card key={project.id} className="flex flex-col">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl">{project.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">{project.tracks?.name}</p>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <CardTitle className="text-lg truncate">{project.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{project.tracks?.name}</p>
                     </div>
-                    <Badge variant={new Date(project.deadline) > new Date() ? "default" : "destructive"}>
+                    <Badge 
+                      variant={new Date(project.deadline) > new Date() ? "default" : "destructive"}
+                      className="shrink-0"
+                    >
                       {new Date(project.deadline) > new Date() ? "Active" : "Expired"}
                     </Badge>
                   </div>
@@ -306,23 +312,24 @@ export default function ProjectsPage() {
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Due: {format(new Date(project.deadline), 'PPP')}
+                      <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">Due: {format(new Date(project.deadline), 'PPP')}</span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="mr-2 h-4 w-4" />
-                      {project.student_projects?.length || 0} submissions
+                      <Users className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">{project.student_projects?.length || 0} submissions</span>
                     </div>
                     {project.student_projects?.length > 0 && (
-                      <div className="mt-4 space-y-2 border-t pt-2">
+                      <div className="mt-4 pt-4 border-t space-y-2">
                         <p className="text-sm font-medium">Submissions:</p>
                         <div className="max-h-[120px] overflow-y-auto pr-2 space-y-2">
                           {project.student_projects.map((submission) => (
                             <div key={submission.id} className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">{submission.students.name}</span>
+                              <span className="text-muted-foreground truncate mr-2">{submission.students.name}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="shrink-0"
                                 onClick={() => handleDownload(submission.file_path)}
                               >
                                 <Download className="h-4 w-4" />
@@ -334,112 +341,114 @@ export default function ProjectsPage() {
                     )}
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(project)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDeleteProject(project)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
+                <CardFooter className="mt-auto pt-6">
+                  <div className="flex flex-col w-full gap-2">
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 text-sm"
+                      onClick={() => handleEdit(project)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 text-sm"
+                      onClick={() => setDeleteProject(project)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             ))
           )}
         </div>
-
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingProject ? 'Edit Project' : 'Create New Project'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title</label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Enter project title"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Enter project description"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Track</label>
-                  <Select
-                    value={formData.track}
-                    onValueChange={(value) => setFormData({ ...formData, track: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a track" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRACKS.map((track) => (
-                        <SelectItem key={track} value={track}>
-                          {track}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Deadline</label>
-                  <Input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : editingProject ? 'Update Project' : 'Create Project'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        <AlertDialog open={!!deleteProject} onOpenChange={(open) => !open && setDeleteProject(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Project</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deleteProject?.title}&quot;? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingProject ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Title</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter project title"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter project description"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Track</label>
+                <Select
+                  value={formData.track}
+                  onValueChange={(value) => setFormData({ ...formData, track: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a track" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TRACKS.map((track) => (
+                      <SelectItem key={track} value={track}>
+                        {track}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Deadline</label>
+                <Input
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Saving...' : editingProject ? 'Update Project' : 'Create Project'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteProject} onOpenChange={(open) => !open && setDeleteProject(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deleteProject?.title}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AdminFab />
       <Toaster />
     </>

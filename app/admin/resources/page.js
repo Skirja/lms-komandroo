@@ -34,7 +34,7 @@ import { Input } from '@/components/ui/input'
 import { useForm } from 'react-hook-form'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { ExternalLink, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { AdminFab } from '@/components/ui/admin-fab'
 import { Toaster } from '@/components/ui/toaster'

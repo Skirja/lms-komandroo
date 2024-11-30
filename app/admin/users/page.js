@@ -265,7 +265,7 @@ export default function UsersPage() {
   return (
     <>
       <div className="p-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold">Manage Users</h1>
             <p className="text-muted-foreground">
@@ -402,7 +402,7 @@ export default function UsersPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-md border w-full">
+        <div className="rounded-md border w-full mt-4">
           <Table>
             <TableHeader>
               <TableRow>
