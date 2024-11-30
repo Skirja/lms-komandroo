@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from '@/hooks/use-toast'
+import { AdminFab } from '@/components/ui/admin-fab'
 
 const TRACKS = [
   'Web Development',
@@ -141,115 +142,118 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Manage Quiz</h1>
-          <p className="text-muted-foreground">Create and manage quizzes for students</p>
-        </div>
-        <div className="flex gap-4">
-          <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by track" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Tracks</SelectItem>
-              {TRACKS.map((track) => (
-                <SelectItem key={track} value={track}>
-                  {track}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Link href="/admin/quiz/create" passHref>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Quiz
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          <p>Loading quizzes...</p>
-        ) : quizzes.length === 0 ? (
-          <p>No quizzes found.</p>
-        ) : (
-          quizzes.map((quiz) => (
-            <Card key={quiz.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{quiz.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{quiz.track}</p>
-                  </div>
-                  <Badge variant={quiz.is_active ? "default" : "secondary"}>
-                    {quiz.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="mr-2 h-4 w-4" />
-                    {quiz.time_limit || "No"} minutes
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="mr-2 h-4 w-4" />
-                    {quiz.questionCount} questions
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <Link href={`/admin/quiz/${quiz.id}/results`}>
-                    <Users className="mr-2 h-4 w-4" />
-                    View Results
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <Link href={`/admin/quiz/${quiz.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(quiz)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
-        )}
-      </div>
-
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Quiz</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &quot;{selectedQuiz?.title}&quot;? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+    <>
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Manage Quiz</h1>
+            <p className="text-muted-foreground">Create and manage quizzes for students</p>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <div className="flex gap-4">
+            <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by track" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tracks</SelectItem>
+                {TRACKS.map((track) => (
+                  <SelectItem key={track} value={track}>
+                    {track}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Link href="/admin/quiz/create" passHref>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Quiz
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {isLoading ? (
+            <p>Loading quizzes...</p>
+          ) : quizzes.length === 0 ? (
+            <p>No quizzes found.</p>
+          ) : (
+            quizzes.map((quiz) => (
+              <Card key={quiz.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-xl">{quiz.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">{quiz.track}</p>
+                    </div>
+                    <Badge variant={quiz.is_active ? "default" : "secondary"}>
+                      {quiz.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="mr-2 h-4 w-4" />
+                      {quiz.time_limit || "No"} minutes
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Users className="mr-2 h-4 w-4" />
+                      {quiz.questionCount} questions
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <Link href={`/admin/quiz/${quiz.id}/results`}>
+                      <Users className="mr-2 h-4 w-4" />
+                      View Results
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <Link href={`/admin/quiz/${quiz.id}/edit`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(quiz)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
+        </div>
+
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Quiz</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete &quot;{selectedQuiz?.title}&quot;? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <AdminFab />
+    </>
   )
 }

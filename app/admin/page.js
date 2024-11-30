@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Users, BookOpen, GraduationCap } from "lucide-react"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useEffect, useState } from 'react'
+import { AdminFab } from '@/components/ui/admin-fab'
 
 export default function AdminPage() {
   const [stats, setStats] = useState({
@@ -107,110 +108,113 @@ export default function AdminPage() {
   }, [supabase])
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStudents}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered Students
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Tracks</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTracks}</div>
-            <p className="text-xs text-muted-foreground">
-              Learning Paths
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalResources}</div>
-            <p className="text-xs text-muted-foreground">
-              Learning Resources
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activities</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalActivities}</div>
-            <p className="text-xs text-muted-foreground">
-              Quiz Results
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Activities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center">
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {activity.studentName || activity.studentEmail || 'Unknown User'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.completed ? 'Completed' : 'Working on'} Quiz: {activity.quizTitle}
-                      {activity.completed && activity.score !== null && ` (Score: ${activity.score})`}
-                    </p>
+    <>
+      <div className="flex-1 space-y-4 p-4 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalStudents}</div>
+              <p className="text-xs text-muted-foreground">
+                Registered Students
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Available Tracks</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalTracks}</div>
+              <p className="text-xs text-muted-foreground">
+                Learning Paths
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalResources}</div>
+              <p className="text-xs text-muted-foreground">
+                Learning Resources
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Activities</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalActivities}</div>
+              <p className="text-xs text-muted-foreground">
+                Quiz Results
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Recent Activities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-center">
+                    <div className="ml-4 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {activity.studentName || activity.studentEmail || 'Unknown User'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.completed ? 'Completed' : 'Working on'} Quiz: {activity.quizTitle}
+                        {activity.completed && activity.score !== null && ` (Score: ${activity.score})`}
+                      </p>
+                    </div>
+                    <div className="ml-auto font-medium">
+                      {new Date(activity.created_at).toLocaleDateString('en-US')}
+                    </div>
                   </div>
-                  <div className="ml-auto font-medium">
-                    {new Date(activity.created_at).toLocaleDateString('en-US')}
+                ))}
+                {recentActivities.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No quiz activities yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="col-span-3">
+            <CardHeader>
+              <CardTitle>Track Statistics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {trackStats.map((track) => (
+                  <div key={track.name} className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">{track.name}</p>
+                      <p className="text-sm text-muted-foreground">{track.studentCount} students</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {recentActivities.length === 0 && (
-                <p className="text-sm text-muted-foreground">No quiz activities yet</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Track Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {trackStats.map((track) => (
-                <div key={track.name} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{track.name}</p>
-                    <p className="text-sm text-muted-foreground">{track.studentCount} students</p>
-                  </div>
-                </div>
-              ))}
-              {trackStats.length === 0 && (
-                <p className="text-sm text-muted-foreground">No track data available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+                {trackStats.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No track data available</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+      <AdminFab />
+    </>
   )
 }
